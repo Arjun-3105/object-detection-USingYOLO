@@ -1,0 +1,7 @@
+/.ipynb_checkpoints
+/checkpoint.pth.tar
+/myenv
+/PASCAL_VOC
+/README.md
+/__pycache__
+/trained_model.pt
