@@ -13,49 +13,24 @@ from tqdm import tqdm
 
 def iou_width_height(boxes1, boxes2):
     """
-    Compute IoU for each pair of predicted and ground truth boxes.
-
     Parameters:
-        boxes1 (tensor): (N, 4) tensor of predicted boxes [xmin, ymin, xmax, ymax]
-        boxes2 (tensor): (M, 4) tensor of ground truth boxes [xmin, ymin, xmax, ymax]
-
+        boxes1 (tensor): width and height of the first bounding boxes
+        boxes2 (tensor): width and height of the second bounding boxes
     Returns:
-        tensor: (N, M) tensor of IoU values for each pair of predicted and ground truth boxes
+        tensor: Intersection over union of the corresponding boxes
     """
-    N = boxes1.size(0)
-    M = boxes2.size(0)
-    
-    ious = torch.zeros(N, M)  # Initialize the IoU matrix
-    
-    for i in range(N):
-        for j in range(M):
-            # Compute the (x_min, y_min) and (x_max, y_max) of the intersection
-            inter_xmin = torch.max(boxes1[i, 0], boxes2[j, 0])
-            inter_ymin = torch.max(boxes1[i, 1], boxes2[j, 1])
-            inter_xmax = torch.min(boxes1[i, 2], boxes2[j, 2])
-            inter_ymax = torch.min(boxes1[i, 3], boxes2[j, 3])
-            
-            # Compute area of intersection
-            inter_width = torch.max(inter_xmax - inter_xmin, torch.tensor(0.0))
-            inter_height = torch.max(inter_ymax - inter_ymin, torch.tensor(0.0))
-            intersection_area = inter_width * inter_height
-            
-            # Compute area of both boxes
-            box1_area = (boxes1[i, 2] - boxes1[i, 0]) * (boxes1[i, 3] - boxes1[i, 1])
-            box2_area = (boxes2[j, 2] - boxes2[j, 0]) * (boxes2[j, 3] - boxes2[j, 1])
-            
-            # Compute the IoU
-            union_area = box1_area + box2_area - intersection_area
-            ious[i, j] = intersection_area / union_area if union_area > 0 else 0
-    
-    return ious
+    intersection = torch.min(boxes1[..., 0], boxes2[..., 0]) * torch.min(
+        boxes1[..., 1], boxes2[..., 1]
+    )
+    union = (
+        boxes1[..., 0] * boxes1[..., 1] + boxes2[..., 0] * boxes2[..., 1] - intersection
+    )
+    return intersection / union
+
 
 
 def intersection_over_union(boxes_preds, boxes_labels, box_format="midpoint"):
     """
-    Video explanation of this function:
-    https://youtu.be/XXYG5ZWtjj0
-
     This function calculates intersection over union (iou) given pred boxes
     and target boxes.
 
@@ -66,8 +41,8 @@ def intersection_over_union(boxes_preds, boxes_labels, box_format="midpoint"):
 
     Returns:
         tensor: Intersection over union for all examples
-    """
-
+    """ 
+    #account for mid to get [x_center, y_center, width, height].
     if box_format == "midpoint":
         box1_x1 = boxes_preds[..., 0:1] - boxes_preds[..., 2:3] / 2
         box1_y1 = boxes_preds[..., 1:2] - boxes_preds[..., 3:4] / 2
@@ -77,7 +52,7 @@ def intersection_over_union(boxes_preds, boxes_labels, box_format="midpoint"):
         box2_y1 = boxes_labels[..., 1:2] - boxes_labels[..., 3:4] / 2
         box2_x2 = boxes_labels[..., 0:1] + boxes_labels[..., 2:3] / 2
         box2_y2 = boxes_labels[..., 1:2] + boxes_labels[..., 3:4] / 2
-
+    # to convert to corner point bounding box format -- [xmin, ymin, xmax, ymax]
     if box_format == "corners":
         box1_x1 = boxes_preds[..., 0:1]
         box1_y1 = boxes_preds[..., 1:2]
@@ -102,9 +77,7 @@ def intersection_over_union(boxes_preds, boxes_labels, box_format="midpoint"):
 
 def non_max_suppression(bboxes, iou_threshold, threshold, box_format="corners"):
     """
-    Video explanation of this function:
-    https://youtu.be/YDkjWEN8jNA
-
+    filter out redundant bounding boxes that overlap too
     Does Non Max Suppression given bboxes
 
     Parameters:
@@ -148,9 +121,7 @@ def mean_average_precision(
     pred_boxes, true_boxes, iou_threshold=0.5, box_format="midpoint", num_classes=20
 ):
     """
-    Video explanation of this function:
-    https://youtu.be/FppOzcDvaDI
-
+    Average Precision for each class
     This function calculates mean average precision (mAP)
 
     Parameters:

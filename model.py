@@ -24,7 +24,7 @@ config = [
     (512, 3, 2),
     ["B", 8],
     (1024, 3, 2),
-    ["B", 4],  # To this point is Darknet-53
+    ["B", 4], 
     (512, 1, 1),
     (1024, 3, 1),
     "S",
@@ -168,8 +168,10 @@ if __name__ == "__main__":
     num_classes = 20
     IMAGE_SIZE = 416
     model = YOLOv3(num_classes=num_classes)
-    x = torch.randn((2, 3, IMAGE_SIZE, IMAGE_SIZE))
+    x = torch.randn((2, 3, IMAGE_SIZE, IMAGE_SIZE)) #dummy input
     out = model(x)
+
+    #to check if model has correct dimensionality
     assert model(x)[0].shape == (2, 3, IMAGE_SIZE//32, IMAGE_SIZE//32, num_classes + 5)
     assert model(x)[1].shape == (2, 3, IMAGE_SIZE//16, IMAGE_SIZE//16, num_classes + 5)
     assert model(x)[2].shape == (2, 3, IMAGE_SIZE//8, IMAGE_SIZE//8, num_classes + 5)

@@ -3,11 +3,9 @@ import cv2
 import torch
 
 from albumentations.pytorch import ToTensorV2
-# from utils import seed_everything
 
 DATASET = 'PASCAL_VOC'
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-# seed_everything()  # If you want deterministic behavior
 NUM_WORKERS = 4
 BATCH_SIZE = 32
 IMAGE_SIZE = 416
@@ -18,7 +16,7 @@ NUM_EPOCHS = 20
 CONF_THRESHOLD = 0.05
 MAP_IOU_THRESH = 0.5
 NMS_IOU_THRESH = 0.45
-S = [IMAGE_SIZE // 32, IMAGE_SIZE // 16, IMAGE_SIZE // 8]
+S = [IMAGE_SIZE // 32, IMAGE_SIZE // 16, IMAGE_SIZE // 8]  #scale List, Grid sizes for coarse, medium and fine scales
 PIN_MEMORY = True
 LOAD_MODEL = True
 SAVE_MODEL = True
@@ -30,38 +28,42 @@ ANCHORS = [
     [(0.28, 0.22), (0.38, 0.48), (0.9, 0.78)],
     [(0.07, 0.15), (0.15, 0.11), (0.14, 0.29)],
     [(0.02, 0.03), (0.04, 0.07), (0.08, 0.06)],
-]  # Note these have been rescaled to be between [0, 1]
+]  
 
 
 scale = 1.1
+'''Image Augmentation, converting to tensors for easier input to model'''
 train_transforms = A.Compose(
     [
-        A.LongestMaxSize(max_size=int(IMAGE_SIZE * scale)),
-        A.PadIfNeeded(
+        A.LongestMaxSize(max_size=int(IMAGE_SIZE * scale)), #increase size
+        A.PadIfNeeded( #padding if needed
             min_height=int(IMAGE_SIZE * scale),
             min_width=int(IMAGE_SIZE * scale),
             border_mode=cv2.BORDER_CONSTANT,
         ),
-        A.RandomCrop(width=IMAGE_SIZE, height=IMAGE_SIZE),
-        A.ColorJitter(brightness=0.6, contrast=0.6, saturation=0.6, hue=0.6, p=0.4),
-        A.OneOf(
+        A.RandomCrop(width=IMAGE_SIZE, height=IMAGE_SIZE), #back to original size
+        #above three commands does off-center framing, and partial occlusion
+        A.ColorJitter(brightness=0.6, contrast=0.6, saturation=0.6, hue=0.6, p=0.4), #color augmentation
+        A.OneOf( #to insure real world randomness
             [
                 A.Affine(scale=(0.8, 1.2), rotate=(-20, 20), translate_percent=(0.1, 0.1), shear=15, p=0.5, interpolation=1),  # Nearest interpolation,
                 A.Affine(shear=15, p=0.5,),
             ],
             p=1.0,
         ),
-        A.HorizontalFlip(p=0.5),
+        A.HorizontalFlip(p=0.5),   #lines 53-58 - to mimic noise and disorttion
         A.Blur(p=0.1),
         A.CLAHE(p=0.1),
         A.Posterize(p=0.1),
         A.ToGray(p=0.1),
         A.ChannelShuffle(p=0.05),
-        A.Normalize(mean=[0, 0, 0], std=[1, 1, 1], max_pixel_value=255,),
-        ToTensorV2(),
+        A.Normalize(mean=[0, 0, 0], std=[1, 1, 1], max_pixel_value=255,),  #normalize [0,1]
+        ToTensorV2(),  #convert to tensor object
     ],
-    bbox_params=A.BboxParams(format="yolo", min_visibility=0.4, label_fields=[],),
+    bbox_params=A.BboxParams(format="yolo", min_visibility=0.4, label_fields=[],), #to make sure the bounding boxes are also converted to tensor objects
 )
+
+#used for test-pipeline and convert image to tensors
 test_transforms = A.Compose(
     [
         A.LongestMaxSize(max_size=IMAGE_SIZE),
@@ -95,8 +97,7 @@ PASCAL_CLASSES = [
     "sofa",
     "train",
     "tvmonitor"
-]
-
+]# if trained on this new object detection dataset further
 COCO_LABELS = ['person',
  'bicycle',
  'car',
