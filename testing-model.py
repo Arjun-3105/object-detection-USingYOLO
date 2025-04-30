@@ -18,7 +18,7 @@ PASCAL_CLASSES = [
 class_name_to_id = {v: k for k, v in model.names.items()}
 pascal_class_ids = [class_name_to_id[c] for c in PASCAL_CLASSES if c in class_name_to_id]
 
-st.title("🚀 YOLOv8 Object Detection")
+st.title("🚀 YOLOv3 Object Detection")
 st.write("Upload an image or video to see object detection in action!")
 
 uploaded_file = st.file_uploader("Upload Image or Video", type=["jpg", "jpeg", "png", "mp4", "mov"])
